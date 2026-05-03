@@ -61,13 +61,17 @@ Edit files in `src/`, `custom/plugins/`, or `config/` and refresh the browser �
 The template ships `scdev` wrappers for the most common operations:
 
 ```bash
-scdev cache-clear                            # = scdev exec app php bin/console cache:clear
-scdev refresh-index                          # = scdev exec app php bin/console dal:refresh:index
-scdev build                                  # = scdev exec app shopware-cli project ci --with-dev-dependencies
+scdev cache-clear                            # = scdev console cache:clear
+scdev refresh-index                          # = scdev console dal:refresh:index
+scdev build                                  # = scdev shopware-cli project ci --with-dev-dependencies
 
-scdev console                                # = scdev exec app php bin/console   (lists every command)
-scdev shopware-cli                           # = scdev exec app shopware-cli       (top-level help)
-scdev shopware-cli project ci                # forwards subcommands transparently
+scdev console                                # bin/console with no args (lists every command)
+scdev console cache:clear                    # any bin/console command — colons pass through
+scdev console dal:refresh:index
+scdev console plugin:refresh
+
+scdev shopware-cli                           # shopware-cli top-level help
+scdev shopware-cli project ci
 scdev shopware-cli project doctor
 scdev shopware-cli project storefront-watch  # HMR watcher
 scdev shopware-cli extension list
@@ -80,32 +84,30 @@ scdev worker retry                           # retry every failed message
 scdev worker restart                         # tell workers to exit; the container respawns them within ~1s
 ```
 
-**Why `scdev console cache:clear` isn't a thing.** The underlying `just` runner reserves `:` as its module-path separator, so colon-containing commands like `cache:clear` can't be forwarded through `scdev console`. `shopware-cli` subcommands (`project`, `extension`, `account`) are plain identifiers, so they forward transparently. For anything else, use the direct `scdev exec app php bin/console <cmd>` form — one word longer, always works.
-
 ### Common commands
 
 ```bash
-scdev exec app shopware-cli project ci --with-dev-dependencies  # Full rebuild (admin + storefront + theme + assets)
-scdev exec app shopware-cli project storefront-build            # Rebuild storefront only
-scdev exec app shopware-cli project admin-build                 # Rebuild admin only
-scdev exec app shopware-cli project dump --output /app/dump.sql # DB dump (optionally --anonymize)
-scdev exec app shopware-cli project admin-api GET /api/product  # Pre-authenticated Admin API call
-scdev exec app shopware-cli project doctor                      # Health-check the project
-scdev exec app composer require <package>                       # Add a PHP package
-scdev exec app composer update                                  # Update composer packages
-scdev exec app php bin/console <command>                        # Run any Shopware / Symfony console command
-scdev exec app php bin/console cache:clear                      # Clear the cache
-scdev exec app php bin/console plugin:refresh                   # Refresh the plugin list
-scdev exec app php bin/console plugin:install --activate <Name> # Install + activate a plugin
-scdev exec app php bin/console theme:compile                    # Recompile the active theme (SCSS changes)
-scdev exec app php bin/console dal:refresh:index                # Rebuild search/category indexes
-scdev exec app bash -c "APP_ENV=prod php bin/console framework:demodata --products=50 --reset-defaults"  # Regenerate demo data
-scdev exec app bash                                             # Open an interactive shell
+scdev shopware-cli project ci --with-dev-dependencies   # Full rebuild (admin + storefront + theme + assets)
+scdev shopware-cli project storefront-build             # Rebuild storefront only
+scdev shopware-cli project admin-build                  # Rebuild admin only
+scdev shopware-cli project dump --output /app/dump.sql  # DB dump (optionally --anonymize)
+scdev shopware-cli project admin-api GET /api/product   # Pre-authenticated Admin API call
+scdev shopware-cli project doctor                       # Health-check the project
+scdev exec app composer require <package>               # Add a PHP package
+scdev exec app composer update                          # Update composer packages
+scdev console <command>                                 # Run any Shopware / Symfony console command
+scdev console cache:clear                               # Clear the cache
+scdev console plugin:refresh                            # Refresh the plugin list
+scdev console plugin:install --activate <Name>          # Install + activate a plugin
+scdev console theme:compile                             # Recompile the active theme (SCSS changes)
+scdev console dal:refresh:index                         # Rebuild search/category indexes
+scdev exec app bash -c "APP_ENV=prod php bin/console framework:demodata --products=50 --reset-defaults"  # Regenerate demo data (needs APP_ENV=prod)
+scdev exec app bash                                     # Open an interactive shell
 ```
 
 ### shopware-cli quick reference
 
-`shopware-cli` is preinstalled in the container. Run `scdev exec app shopware-cli project --help` for the full list.
+`shopware-cli` is preinstalled in the container. Run `scdev shopware-cli project --help` for the full list.
 
 **Works out of the box** (no project config needed):
 
@@ -119,7 +121,7 @@ scdev exec app bash                                             # Open an intera
 | `project worker [amount]` | Runs Symfony workers (mail queue, flow actions, scheduled tasks) in the background |
 | `project generate-jwt` | Rotates the JWT secret used for Admin API tokens |
 
-**Need `.shopware-project.yml`** — run `scdev exec app shopware-cli project config init` interactively once to create it, then:
+**Need `.shopware-project.yml`** — run `scdev shopware-cli project config init` interactively once to create it, then:
 
 | Command | What it does |
 |---|---|
@@ -138,11 +140,11 @@ scdev exec app bash                                             # Open an intera
 
 - Change DB password / name in `.scdev/config.yaml` under `variables:`, then `scdev down -v` (removes DB volume so MariaDB reinitializes with new credentials) and `scdev start`.
 - Change the internal HTTP port by overriding `PORT` in `.scdev/config.yaml` `variables:` (defaults to `80`). Traefik terminates HTTPS externally, so this only affects the Symfony dev server inside the container.
-- Enable OpenSearch by flipping `SHOPWARE_ES_ENABLED` / `SHOPWARE_ES_INDEXING_ENABLED` to `1`, adding an `opensearch` service to `.scdev/config.yaml`, and setting `OPENSEARCH_URL=http://opensearch:9200`. Then run `scdev exec app php bin/console es:index` to build the indexes.
+- Enable OpenSearch by flipping `SHOPWARE_ES_ENABLED` / `SHOPWARE_ES_INDEXING_ENABLED` to `1`, adding an `opensearch` service to `.scdev/config.yaml`, and setting `OPENSEARCH_URL=http://opensearch:9200`. Then run `scdev console es:index` to build the indexes.
 - After editing Twig templates under `src/Resources/views/` or `custom/plugins/*/src/Resources/views/`, no rebuild is needed — just refresh.
-- After editing storefront SCSS, run `scdev exec app php bin/console theme:compile`.
-- After editing storefront JS, run `scdev exec app shopware-cli project storefront-build` (or `storefront-watch` for HMR).
-- After editing admin JS/Vue, run `scdev exec app shopware-cli project admin-build` (or `admin-watch` for HMR).
+- After editing storefront SCSS, run `scdev console theme:compile`.
+- After editing storefront JS, run `scdev shopware-cli project storefront-build` (or `storefront-watch` for HMR).
+- After editing admin JS/Vue, run `scdev shopware-cli project admin-build` (or `admin-watch` for HMR).
 - To regenerate demo data with different counts: `scdev exec app bash -c "APP_ENV=prod php bin/console framework:demodata --products=100 --orders=50 --reset-defaults"`.
 - Any other `.scdev/config.yaml` change: `scdev update` diffs the config against running containers and recreates only what changed.
 
@@ -159,13 +161,13 @@ Asset build hasn't run. Either `scdev setup` was skipped, or you ran `scdev down
 ```bash
 scdev exec app bash bin/build-storefront.sh
 scdev exec app bash bin/build-administration.sh
-scdev exec app php bin/console theme:compile
-scdev exec app php bin/console assets:install
+scdev console theme:compile
+scdev console assets:install
 ```
 
 ### "Apps and plugins currently incompatible with your Shopware version" warning
 
-Expected on a fresh install — the message appears until you run `scdev exec app php bin/console plugin:refresh`. The template leaves the plugin list empty, so there are no actual incompatibilities.
+Expected on a fresh install — the message appears until you run `scdev console plugin:refresh`. The template leaves the plugin list empty, so there are no actual incompatibilities.
 
 ### Config change isn't taking effect
 

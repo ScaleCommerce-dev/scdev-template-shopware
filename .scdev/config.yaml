@@ -1,0 +1,85 @@
+version: 1
+name: ${PROJECTDIR}
+domain: ${PROJECTNAME}.${SCDEV_DOMAIN}
+
+info: |
+  ## ${PROJECTNAME}
+
+  Shopware 6 e-commerce application.
+
+  Run `scdev setup` to scaffold and install the project.
+
+  Default admin login after setup:
+    Username: admin
+    Password: shopware
+
+variables:
+  DB_PASSWORD: shopware
+  DB_NAME: shopware
+  PORT: 80
+
+shared:
+  router: true
+  mail: true
+  db: true
+
+services:
+  app:
+    image: ghcr.io/scalecommerce/docker-php-cli:8.4.20
+    command: >-
+      sh -c "
+      if [ ! -f .setup-complete ]; then
+        echo 'Waiting for setup... Run: scdev setup';
+        while [ ! -f .setup-complete ]; do sleep 2; done;
+      fi;
+      if ! command -v symfony > /dev/null 2>&1; then
+        wget -q https://get.symfony.com/cli/installer -O - | bash > /dev/null 2>&1;
+        cp \$HOME/.symfony5/bin/symfony /usr/local/bin/symfony;
+      fi;
+      if ! command -v shopware-cli > /dev/null 2>&1; then
+        ARCH=\$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/');
+        wget -qO /tmp/sw.tar.gz https://github.com/shopware/shopware-cli/releases/latest/download/shopware-cli_linux_\$ARCH.tar.gz > /dev/null 2>&1;
+        tar -xzf /tmp/sw.tar.gz -C /usr/local/bin shopware-cli && rm /tmp/sw.tar.gz;
+      fi;
+      composer install --no-interaction;
+      exec symfony server:start --no-tls --port=${PORT} --allow-all-ip"
+    working_dir: /app
+    volumes:
+      - ${PROJECTPATH}:/app
+    environment:
+      APP_ENV: dev
+      APP_DEBUG: "1"
+      APP_SECRET: ${PROJECTNAME}-dev-secret-change-me-in-production-please
+      APP_URL: "https://${PROJECTNAME}.${SCDEV_DOMAIN}"
+      DATABASE_URL: "mysql://root:${DB_PASSWORD}@db:3306/${DB_NAME}"
+      MAILER_DSN: "smtp://mail:1025"
+      COMPOSER_ALLOW_SUPERUSER: "1"
+      SYMFONY_TRUSTED_PROXIES: "private_ranges"
+      SHOPWARE_ES_ENABLED: "0"
+      SHOPWARE_ES_INDEXING_ENABLED: "0"
+      SHOPWARE_HTTP_CACHE_ENABLED: "0"
+      PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "true"
+    routing:
+      port: ${PORT}
+
+  db:
+    image: mariadb:11.4
+    volumes:
+      - db_data:/var/lib/mysql
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_PASSWORD}
+      MARIADB_DATABASE: ${DB_NAME}
+
+mutagen:
+  ignore:
+    - vendor
+    - node_modules
+    - .scdev
+    - .setup-complete
+    - var
+    - public/bundles
+    - public/theme
+    - public/media
+    - public/thumbnail
+    - public/sitemap
+    - files

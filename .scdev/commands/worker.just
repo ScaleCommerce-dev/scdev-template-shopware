@@ -12,7 +12,16 @@
 # These subcommands are utilities — the worker runs unattended otherwise.
 
 [no-exit-message]
-default: stats
+default:
+    @echo "Inspect and manage the Symfony Messenger worker."
+    @echo ""
+    @echo "Available subcommands:"
+    @echo "  scdev worker stats     Queue depth (async/low_priority/failed) + live worker pids"
+    @echo "  scdev worker drain     Drain the queue once, right now (useful after bulk imports)"
+    @echo "  scdev worker logs      Tail the worker's log file (/tmp/worker.log in container)"
+    @echo "  scdev worker failed    Show messages stuck in the failure transport"
+    @echo "  scdev worker retry     Retry every message in the failure transport"
+    @echo "  scdev worker restart   Stop running workers — the container respawns them"
 
 # Queue depth (async / low_priority / failed) + live worker processes.
 [no-exit-message]

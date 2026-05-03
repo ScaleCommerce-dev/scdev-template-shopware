@@ -13,6 +13,14 @@ info: |
     Username: admin
     Password: shopware
 
+  Custom commands:
+    scdev build           Full asset rebuild (admin + storefront + theme)
+    scdev cache-clear     Clear the Shopware/Symfony cache
+    scdev refresh-index   Refresh DAL indexes
+    scdev console <cmd>   Run any bin/console command
+    scdev shopware-cli    Run shopware-cli inside the container
+    scdev worker          Inspect queue + worker (stats/drain/logs/failed/retry/restart)
+
 variables:
   DB_PASSWORD: shopware
   DB_NAME: shopware
@@ -42,6 +50,7 @@ services:
         tar -xzf /tmp/sw.tar.gz -C /usr/local/bin shopware-cli && rm /tmp/sw.tar.gz;
       fi;
       composer install --no-interaction;
+      ( while true; do php bin/console messenger:consume async low_priority --time-limit=120 --memory-limit=512M --no-interaction >> /tmp/worker.log 2>&1; sleep 1; done ) &
       exec symfony server:start --no-tls --port=${PORT} --allow-all-ip"
     working_dir: /app
     volumes:

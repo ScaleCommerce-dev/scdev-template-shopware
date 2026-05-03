@@ -15,6 +15,7 @@ A starter template for [scdev](https://github.com/ScaleCommerce-DEV/scdev) that 
 - Administration **First Run Wizard skipped** via `bin/console system:config:set core.frw.completedAt` — log in to `/admin` and go straight to the dashboard, no first-run assistant
 - Full asset build (admin + storefront + theme + bundle assets) run once via `shopware-cli project ci` — a single command that wraps `bin/build-administration.sh`, `bin/build-storefront.sh`, `theme:compile`, and `assets:install`
 - HTTPS via scdev's shared Traefik router, with **`SYMFONY_TRUSTED_PROXIES=private_ranges`** so Symfony generates `https://` URLs behind the reverse proxy (without this, the admin login bounces and mixed-content errors appear in the browser console)
+- Permanent **Symfony Messenger worker** running inside the app container — consumes the `async` and `low_priority` transports so emails, indexer updates, flow actions, and scheduled tasks process without anyone having to keep the admin tab open. Restarts every 120s (`--time-limit`) and on memory pressure (`--memory-limit=512M`). Lives in the same container as the dev server so it shares the existing `vendor/`, with no parallel Mutagen session or composer install. Inspect via `scdev worker` (see below)
 - Mailpit integration (`MAILER_DSN=smtp://mail:1025`) — all outgoing mail is caught
 - OpenSearch disabled by default (`SHOPWARE_ES_ENABLED=0`) — Shopware falls back to SQL-based search, which is plenty for dev
 - Mutagen file sync (macOS) with `vendor/`, `var/`, `node_modules/`, `public/bundles/`, `public/theme/`, `public/media/`, `public/thumbnail/`, `.scdev/`, and `.setup-complete` kept inside the container for speed
@@ -47,7 +48,7 @@ Setup takes several minutes (Composer pulls ~500 MB of dependencies and Shopware
 7. Runs `shopware-cli project ci --with-dev-dependencies` — one command that builds admin + storefront JS/CSS, compiles the theme, and copies bundle assets into `public/`
 8. Runs `APP_ENV=prod php bin/console framework:demodata --products=30 --categories=10 ...` — generates demo products, categories, manufacturers, customers, orders, and media (Shopware's demo-data generator enforces `APP_ENV=prod` as a safety check, hence the env override)
 9. Runs `php bin/console system:config:set core.frw.completedAt "<now>"` — marks the First Run Wizard as completed so admin login goes straight to the dashboard
-10. Clears the cache and marks setup complete — the Symfony dev server starts automatically
+10. Clears the cache and marks setup complete — the Symfony dev server **and the messenger worker** start automatically
 
 Full script: [.scdev/commands/setup.just](.scdev/commands/setup.just).
 
@@ -70,6 +71,13 @@ scdev shopware-cli project ci                # forwards subcommands transparentl
 scdev shopware-cli project doctor
 scdev shopware-cli project storefront-watch  # HMR watcher
 scdev shopware-cli extension list
+
+scdev worker                                 # queue depth (async/low_priority/failed) + live worker pids
+scdev worker drain                           # one-shot drain of the queue (useful after bulk imports)
+scdev worker logs                            # tail the worker's log (/tmp/worker.log inside the container)
+scdev worker failed                          # show messages stuck in the failure transport
+scdev worker retry                           # retry every failed message
+scdev worker restart                         # tell workers to exit; the container respawns them within ~1s
 ```
 
 **Why `scdev console cache:clear` isn't a thing.** The underlying `just` runner reserves `:` as its module-path separator, so colon-containing commands like `cache:clear` can't be forwarded through `scdev console`. `shopware-cli` subcommands (`project`, `extension`, `account`) are plain identifiers, so they forward transparently. For anything else, use the direct `scdev exec app php bin/console <cmd>` form — one word longer, always works.

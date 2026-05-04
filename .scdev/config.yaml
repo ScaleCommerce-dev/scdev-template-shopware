@@ -50,7 +50,7 @@ services:
         tar -xzf /tmp/sw.tar.gz -C /usr/local/bin shopware-cli && rm /tmp/sw.tar.gz;
       fi;
       composer install --no-interaction;
-      ( while true; do php bin/console messenger:consume async low_priority --time-limit=120 --memory-limit=512M --no-interaction >> /tmp/worker.log 2>&1; sleep 1; done ) &
+      ( while true; do php bin/console messenger:consume async low_priority -vv --time-limit=120 --memory-limit=512M --no-interaction 2>&1 | awk '/(Consuming messages|Received message|handled successfully|Stopping worker|Worker stopped)/ { print; fflush(); }' >> /tmp/worker.log; sleep 1; done ) &
       exec symfony server:start --no-tls --port=${PORT} --allow-all-ip"
     working_dir: /app
     volumes:

@@ -22,6 +22,11 @@ default:
     @echo "  scdev worker failed    Show messages stuck in the failure transport"
     @echo "  scdev worker retry     Retry every message in the failure transport"
     @echo "  scdev worker restart   Stop running workers — the container respawns them"
+    @echo ""
+    @echo "Note: scdev refresh-index runs indexers synchronously and does NOT use the"
+    @echo "worker. To see the worker actually consume something, run an action that"
+    @echo "queues messages — saving a product in Admin, or scdev console"
+    @echo "dal:refresh:index --use-queue."
 
 # Queue depth (async / low_priority / failed) + live worker processes.
 [no-exit-message]

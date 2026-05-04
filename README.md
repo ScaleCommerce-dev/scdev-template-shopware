@@ -1,6 +1,6 @@
-# scdev Shopware 6 Template
+# zdev Shopware 6 Template
 
-A starter template for [scdev](https://github.com/ScaleCommerce-DEV/scdev) that scaffolds a Shopware 6 project with a working local development environment.
+A starter template for [zdev](https://github.com/0ploy/zdev) that scaffolds a Shopware 6 project with a working local development environment.
 
 ## What's included
 
@@ -14,30 +14,30 @@ A starter template for [scdev](https://github.com/ScaleCommerce-DEV/scdev) that 
 - Demo data pre-generated: 30 products across 10 categories with 8 manufacturers, 15 customers, 15 orders, and 30 media files — so the storefront looks populated out of the box
 - Administration **First Run Wizard skipped** via `bin/console system:config:set core.frw.completedAt` — log in to `/admin` and go straight to the dashboard, no first-run assistant
 - Full asset build (admin + storefront + theme + bundle assets) run once via `shopware-cli project ci` — a single command that wraps `bin/build-administration.sh`, `bin/build-storefront.sh`, `theme:compile`, and `assets:install`
-- HTTPS via scdev's shared Traefik router, with **`SYMFONY_TRUSTED_PROXIES=private_ranges`** so Symfony generates `https://` URLs behind the reverse proxy (without this, the admin login bounces and mixed-content errors appear in the browser console)
-- Permanent **Symfony Messenger worker** running inside the app container — consumes the `async` and `low_priority` transports so emails, indexer updates, flow actions, and scheduled tasks process without anyone having to keep the admin tab open. Restarts every 120s (`--time-limit`) and on memory pressure (`--memory-limit=512M`). Lives in the same container as the dev server so it shares the existing `vendor/`, with no parallel Mutagen session or composer install. Inspect via `scdev worker` (see below)
+- HTTPS via zdev's shared Traefik router, with **`SYMFONY_TRUSTED_PROXIES=private_ranges`** so Symfony generates `https://` URLs behind the reverse proxy (without this, the admin login bounces and mixed-content errors appear in the browser console)
+- Permanent **Symfony Messenger worker** running inside the app container — consumes the `async` and `low_priority` transports so emails, indexer updates, flow actions, and scheduled tasks process without anyone having to keep the admin tab open. Restarts every 120s (`--time-limit`) and on memory pressure (`--memory-limit=512M`). Lives in the same container as the dev server so it shares the existing `vendor/`, with no parallel Mutagen session or composer install. Inspect via `zdev worker` (see below)
 - Mailpit integration (`MAILER_DSN=smtp://mail:1025`) — all outgoing mail is caught
 - OpenSearch disabled by default (`SHOPWARE_ES_ENABLED=0`) — Shopware falls back to SQL-based search, which is plenty for dev
-- Mutagen file sync (macOS) with `vendor/`, `var/`, `node_modules/`, `public/bundles/`, `public/theme/`, `public/media/`, `public/thumbnail/`, `.scdev/`, and `.setup-complete` kept inside the container for speed
+- Mutagen file sync (macOS) with `vendor/`, `var/`, `node_modules/`, `public/bundles/`, `public/theme/`, `public/media/`, `public/thumbnail/`, `.zdev/`, and `.setup-complete` kept inside the container for speed
 
 ## Usage
 
 ```bash
-scdev create shopware my-shop
+zdev create shopware my-shop
 cd my-shop
-scdev setup
+zdev setup
 ```
 
-Setup takes several minutes (Composer pulls ~500 MB of dependencies and Shopware builds both the storefront and admin bundles). When it finishes, the shop is running at `https://my-shop.scalecommerce.site`.
+Setup takes several minutes (Composer pulls ~500 MB of dependencies and Shopware builds both the storefront and admin bundles). When it finishes, the shop is running at `https://my-shop.0ploy.dev`.
 
 ## Default credentials
 
-- **Storefront**: `https://my-shop.scalecommerce.site/`
-- **Admin panel**: `https://my-shop.scalecommerce.site/admin/`
+- **Storefront**: `https://my-shop.0ploy.dev/`
+- **Admin panel**: `https://my-shop.0ploy.dev/admin/`
   - Username: `admin`
   - Password: `shopware`
 
-## What `scdev setup` does
+## What `zdev setup` does
 
 1. Starts the Docker containers (app + MariaDB) — PHP, extensions, Composer, Node, npm, and pnpm all come from the `ghcr.io/scalecommerce/docker-php-cli:8.4.20` image
 2. Installs the Symfony CLI and `shopware-cli`
@@ -50,7 +50,7 @@ Setup takes several minutes (Composer pulls ~500 MB of dependencies and Shopware
 9. Runs `php bin/console system:config:set core.frw.completedAt "<now>"` — marks the First Run Wizard as completed so admin login goes straight to the dashboard
 10. Clears the cache and marks setup complete — the Symfony dev server **and the messenger worker** start automatically
 
-Full script: [.scdev/commands/setup.just](.scdev/commands/setup.just).
+Full script: [.zdev/commands/setup.just](.zdev/commands/setup.just).
 
 ## Development
 
@@ -58,56 +58,56 @@ Edit files in `src/`, `custom/plugins/`, or `config/` and refresh the browser �
 
 ### Shortcuts
 
-The template ships `scdev` wrappers for the most common operations:
+The template ships `zdev` wrappers for the most common operations:
 
 ```bash
-scdev cache-clear                            # = scdev console cache:clear
-scdev refresh-index                          # = scdev console dal:refresh:index
-scdev build                                  # = scdev shopware-cli project ci --with-dev-dependencies
+zdev cache-clear                            # = zdev console cache:clear
+zdev refresh-index                          # = zdev console dal:refresh:index
+zdev build                                  # = zdev shopware-cli project ci --with-dev-dependencies
 
-scdev console                                # bin/console with no args (lists every command)
-scdev console cache:clear                    # any bin/console command — colons pass through
-scdev console dal:refresh:index
-scdev console plugin:refresh
+zdev console                                # bin/console with no args (lists every command)
+zdev console cache:clear                    # any bin/console command — colons pass through
+zdev console dal:refresh:index
+zdev console plugin:refresh
 
-scdev shopware-cli                           # shopware-cli top-level help
-scdev shopware-cli project ci
-scdev shopware-cli project doctor
-scdev shopware-cli project storefront-watch  # HMR watcher
-scdev shopware-cli extension list
+zdev shopware-cli                           # shopware-cli top-level help
+zdev shopware-cli project ci
+zdev shopware-cli project doctor
+zdev shopware-cli project storefront-watch  # HMR watcher
+zdev shopware-cli extension list
 
-scdev worker                                 # queue depth (async/low_priority/failed) + live worker pids
-scdev worker drain                           # one-shot drain of the queue (useful after bulk imports)
-scdev worker logs                            # tail the worker's log (/tmp/worker.log inside the container)
-scdev worker failed                          # show messages stuck in the failure transport
-scdev worker retry                           # retry every failed message
-scdev worker restart                         # tell workers to exit; the container respawns them within ~1s
+zdev worker                                 # queue depth (async/low_priority/failed) + live worker pids
+zdev worker drain                           # one-shot drain of the queue (useful after bulk imports)
+zdev worker logs                            # tail the worker's log (/tmp/worker.log inside the container)
+zdev worker failed                          # show messages stuck in the failure transport
+zdev worker retry                           # retry every failed message
+zdev worker restart                         # tell workers to exit; the container respawns them within ~1s
 ```
 
 ### Common commands
 
 ```bash
-scdev shopware-cli project ci --with-dev-dependencies   # Full rebuild (admin + storefront + theme + assets)
-scdev shopware-cli project storefront-build             # Rebuild storefront only
-scdev shopware-cli project admin-build                  # Rebuild admin only
-scdev shopware-cli project dump --output /app/dump.sql  # DB dump (optionally --anonymize)
-scdev shopware-cli project admin-api GET /api/product   # Pre-authenticated Admin API call
-scdev shopware-cli project doctor                       # Health-check the project
-scdev exec app composer require <package>               # Add a PHP package
-scdev exec app composer update                          # Update composer packages
-scdev console <command>                                 # Run any Shopware / Symfony console command
-scdev console cache:clear                               # Clear the cache
-scdev console plugin:refresh                            # Refresh the plugin list
-scdev console plugin:install --activate <Name>          # Install + activate a plugin
-scdev console theme:compile                             # Recompile the active theme (SCSS changes)
-scdev console dal:refresh:index                         # Rebuild search/category indexes
-scdev exec app bash -c "APP_ENV=prod php bin/console framework:demodata --products=50 --reset-defaults"  # Regenerate demo data (needs APP_ENV=prod)
-scdev exec app bash                                     # Open an interactive shell
+zdev shopware-cli project ci --with-dev-dependencies   # Full rebuild (admin + storefront + theme + assets)
+zdev shopware-cli project storefront-build             # Rebuild storefront only
+zdev shopware-cli project admin-build                  # Rebuild admin only
+zdev shopware-cli project dump --output /app/dump.sql  # DB dump (optionally --anonymize)
+zdev shopware-cli project admin-api GET /api/product   # Pre-authenticated Admin API call
+zdev shopware-cli project doctor                       # Health-check the project
+zdev exec app composer require <package>               # Add a PHP package
+zdev exec app composer update                          # Update composer packages
+zdev console <command>                                 # Run any Shopware / Symfony console command
+zdev console cache:clear                               # Clear the cache
+zdev console plugin:refresh                            # Refresh the plugin list
+zdev console plugin:install --activate <Name>          # Install + activate a plugin
+zdev console theme:compile                             # Recompile the active theme (SCSS changes)
+zdev console dal:refresh:index                         # Rebuild search/category indexes
+zdev exec app bash -c "APP_ENV=prod php bin/console framework:demodata --products=50 --reset-defaults"  # Regenerate demo data (needs APP_ENV=prod)
+zdev exec app bash                                     # Open an interactive shell
 ```
 
 ### shopware-cli quick reference
 
-`shopware-cli` is preinstalled in the container. Run `scdev shopware-cli project --help` for the full list.
+`shopware-cli` is preinstalled in the container. Run `zdev shopware-cli project --help` for the full list.
 
 **Works out of the box** (no project config needed):
 
@@ -121,7 +121,7 @@ scdev exec app bash                                     # Open an interactive sh
 | `project worker [amount]` | Runs Symfony workers (mail queue, flow actions, scheduled tasks) in the background |
 | `project generate-jwt` | Rotates the JWT secret used for Admin API tokens |
 
-**Need `.shopware-project.yml`** — run `scdev shopware-cli project config init` interactively once to create it, then:
+**Need `.shopware-project.yml`** — run `zdev shopware-cli project config init` interactively once to create it, then:
 
 | Command | What it does |
 |---|---|
@@ -131,55 +131,55 @@ scdev exec app bash                                     # Open an interactive sh
 
 `shopware-cli` doesn't wrap `system:install`, `framework:demodata`, or `system:config:set core.frw.completedAt` — those stay on `bin/console`.
 
-- `scdev db` — opens Adminer. Connect with server `db`, user `root`, password `shopware`, database `shopware`.
-- `scdev mail` — opens Mailpit. All outgoing mail shows up here.
-- `scdev logs -f app` — follow app container logs.
-- `scdev update` — apply `.scdev/config.yaml` changes (env, image, command, volumes). `scdev restart` alone won't — it preserves the container.
+- `zdev db` — opens Adminer. Connect with server `db`, user `root`, password `shopware`, database `shopware`.
+- `zdev mail` — opens Mailpit. All outgoing mail shows up here.
+- `zdev logs -f app` — follow app container logs.
+- `zdev update` — apply `.zdev/config.yaml` changes (env, image, command, volumes). `zdev restart` alone won't — it preserves the container.
 
 ## Customizing
 
-- Change DB password / name in `.scdev/config.yaml` under `variables:`, then `scdev down -v` (removes DB volume so MariaDB reinitializes with new credentials) and `scdev start`.
-- Change the internal HTTP port by overriding `PORT` in `.scdev/config.yaml` `variables:` (defaults to `80`). Traefik terminates HTTPS externally, so this only affects the Symfony dev server inside the container.
-- Enable OpenSearch by flipping `SHOPWARE_ES_ENABLED` / `SHOPWARE_ES_INDEXING_ENABLED` to `1`, adding an `opensearch` service to `.scdev/config.yaml`, and setting `OPENSEARCH_URL=http://opensearch:9200`. Then run `scdev console es:index` to build the indexes.
+- Change DB password / name in `.zdev/config.yaml` under `variables:`, then `zdev down -v` (removes DB volume so MariaDB reinitializes with new credentials) and `zdev start`.
+- Change the internal HTTP port by overriding `PORT` in `.zdev/config.yaml` `variables:` (defaults to `80`). Traefik terminates HTTPS externally, so this only affects the Symfony dev server inside the container.
+- Enable OpenSearch by flipping `SHOPWARE_ES_ENABLED` / `SHOPWARE_ES_INDEXING_ENABLED` to `1`, adding an `opensearch` service to `.zdev/config.yaml`, and setting `OPENSEARCH_URL=http://opensearch:9200`. Then run `zdev console es:index` to build the indexes.
 - After editing Twig templates under `src/Resources/views/` or `custom/plugins/*/src/Resources/views/`, no rebuild is needed — just refresh.
-- After editing storefront SCSS, run `scdev console theme:compile`.
-- After editing storefront JS, run `scdev shopware-cli project storefront-build` (or `storefront-watch` for HMR).
-- After editing admin JS/Vue, run `scdev shopware-cli project admin-build` (or `admin-watch` for HMR).
-- To regenerate demo data with different counts: `scdev exec app bash -c "APP_ENV=prod php bin/console framework:demodata --products=100 --orders=50 --reset-defaults"`.
-- Any other `.scdev/config.yaml` change: `scdev update` diffs the config against running containers and recreates only what changed.
+- After editing storefront SCSS, run `zdev console theme:compile`.
+- After editing storefront JS, run `zdev shopware-cli project storefront-build` (or `storefront-watch` for HMR).
+- After editing admin JS/Vue, run `zdev shopware-cli project admin-build` (or `admin-watch` for HMR).
+- To regenerate demo data with different counts: `zdev exec app bash -c "APP_ENV=prod php bin/console framework:demodata --products=100 --orders=50 --reset-defaults"`.
+- Any other `.zdev/config.yaml` change: `zdev update` diffs the config against running containers and recreates only what changed.
 
 ## Troubleshooting
 
 ### Admin login redirects or cookies are dropped
 
-This shouldn't happen with this template — `SYMFONY_TRUSTED_PROXIES=private_ranges` is set in `.scdev/config.yaml` and `APP_URL` is set to the HTTPS scdev URL. If you forked the template and dropped either, restore them: Traefik terminates HTTPS and forwards HTTP to Symfony, so without `SYMFONY_TRUSTED_PROXIES` Shopware generates `http://` URLs inside the HTTPS page and the browser blocks the cookies / forms.
+This shouldn't happen with this template — `SYMFONY_TRUSTED_PROXIES=private_ranges` is set in `.zdev/config.yaml` and `APP_URL` is set to the HTTPS zdev URL. If you forked the template and dropped either, restore them: Traefik terminates HTTPS and forwards HTTP to Symfony, so without `SYMFONY_TRUSTED_PROXIES` Shopware generates `http://` URLs inside the HTTPS page and the browser blocks the cookies / forms.
 
 ### Storefront 500s with "file does not exist" for `public/theme/...` or `public/bundles/...`
 
-Asset build hasn't run. Either `scdev setup` was skipped, or you ran `scdev down -v` which cleared the public build output. Rebuild manually:
+Asset build hasn't run. Either `zdev setup` was skipped, or you ran `zdev down -v` which cleared the public build output. Rebuild manually:
 
 ```bash
-scdev exec app bash bin/build-storefront.sh
-scdev exec app bash bin/build-administration.sh
-scdev console theme:compile
-scdev console assets:install
+zdev exec app bash bin/build-storefront.sh
+zdev exec app bash bin/build-administration.sh
+zdev console theme:compile
+zdev console assets:install
 ```
 
 ### "Apps and plugins currently incompatible with your Shopware version" warning
 
-Expected on a fresh install — the message appears until you run `scdev console plugin:refresh`. The template leaves the plugin list empty, so there are no actual incompatibilities.
+Expected on a fresh install — the message appears until you run `zdev console plugin:refresh`. The template leaves the plugin list empty, so there are no actual incompatibilities.
 
 ### Config change isn't taking effect
 
-`scdev restart` preserves the container. For env, image, command, or volume changes in `.scdev/config.yaml`, run `scdev update` — it diffs and recreates only what changed. Code changes (via bind mount / Mutagen) don't need any restart.
+`zdev restart` preserves the container. For env, image, command, or volume changes in `.zdev/config.yaml`, run `zdev update` — it diffs and recreates only what changed. Code changes (via bind mount / Mutagen) don't need any restart.
 
 ### `ghcr.io/scalecommerce/docker-php-cli:8.4.20` image pull fails
 
-The image is published to GitHub Container Registry and should pull without authentication. If Docker reports an auth or not-found error, make sure your Docker daemon can reach `ghcr.io` (check proxy/VPN settings) and that you're not rate-limited. As a fallback, swap the image in `.scdev/config.yaml` for a public equivalent (e.g. `php:8.4-cli-alpine` plus manual extension install).
+The image is published to GitHub Container Registry and should pull without authentication. If Docker reports an auth or not-found error, make sure your Docker daemon can reach `ghcr.io` (check proxy/VPN settings) and that you're not rate-limited. As a fallback, swap the image in `.zdev/config.yaml` for a public equivalent (e.g. `php:8.4-cli-alpine` plus manual extension install).
 
 ## Requirements
 
-- [scdev](https://github.com/ScaleCommerce-DEV/scdev) installed
+- [zdev](https://github.com/0ploy/zdev) installed
 - Docker Desktop running
 - Network access to `ghcr.io` to pull the `ghcr.io/scalecommerce/docker-php-cli:8.4.20` image (see [ScaleCommerce/docker-php-cli](https://github.com/ScaleCommerce/docker-php-cli))
 
@@ -190,5 +190,5 @@ The image is published to GitHub Container Registry and should pull without auth
 - Shopware production repo (what we scaffold via `composer create-project`): https://github.com/shopware/production
 - Shopware core repo: https://github.com/shopware/shopware
 - Shopware CLI (useful for packaging extensions): https://github.com/shopware/shopware-cli
-- scdev documentation: https://github.com/ScaleCommerce-DEV/scdev
+- zdev documentation: https://github.com/0ploy/zdev
 - Base PHP image: https://github.com/ScaleCommerce/docker-php-cli

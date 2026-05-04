@@ -1,25 +1,25 @@
 version: 1
 name: ${PROJECTDIR}
-domain: ${PROJECTNAME}.${SCDEV_DOMAIN}
+domain: ${PROJECTNAME}.${ZDEV_DOMAIN}
 
 info: |
   ## ${PROJECTNAME}
 
   Shopware 6 e-commerce application.
 
-  Run `scdev setup` to scaffold and install the project.
+  Run `zdev setup` to scaffold and install the project.
 
   Default admin login after setup:
     Username: admin
     Password: shopware
 
   Custom commands:
-    scdev build           Full asset rebuild (admin + storefront + theme)
-    scdev cache-clear     Clear the Shopware/Symfony cache
-    scdev refresh-index   Refresh DAL indexes
-    scdev console <cmd>   Run any bin/console command
-    scdev shopware-cli    Run shopware-cli inside the container
-    scdev worker          Inspect queue + worker (stats/drain/logs/failed/retry/restart)
+    zdev build           Full asset rebuild (admin + storefront + theme)
+    zdev cache-clear     Clear the Shopware/Symfony cache
+    zdev refresh-index   Refresh DAL indexes
+    zdev console <cmd>   Run any bin/console command
+    zdev shopware-cli    Run shopware-cli inside the container
+    zdev worker          Inspect queue + worker (stats/drain/logs/failed/retry/restart)
 
 variables:
   DB_PASSWORD: shopware
@@ -37,7 +37,7 @@ services:
     command: >-
       sh -c "
       if [ ! -f .setup-complete ]; then
-        echo 'Waiting for setup... Run: scdev setup';
+        echo 'Waiting for setup... Run: zdev setup';
         while [ ! -f .setup-complete ]; do sleep 2; done;
       fi;
       if ! command -v symfony > /dev/null 2>&1; then
@@ -59,7 +59,7 @@ services:
       APP_ENV: dev
       APP_DEBUG: "1"
       APP_SECRET: ${PROJECTNAME}-dev-secret-change-me-in-production-please
-      APP_URL: "https://${PROJECTNAME}.${SCDEV_DOMAIN}"
+      APP_URL: "https://${PROJECTNAME}.${ZDEV_DOMAIN}"
       DATABASE_URL: "mysql://root:${DB_PASSWORD}@db:3306/${DB_NAME}"
       MAILER_DSN: "smtp://mail:1025"
       COMPOSER_ALLOW_SUPERUSER: "1"
@@ -83,7 +83,7 @@ mutagen:
   ignore:
     - vendor
     - node_modules
-    - .scdev
+    - .zdev
     - .setup-complete
     - var
     - public/bundles
